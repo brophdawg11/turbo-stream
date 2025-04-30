@@ -98,6 +98,7 @@ function hydrate(this: ThisDecode, index: number): any {
     if (Array.isArray(value)) {
       if (typeof value[0] === "string") {
         const [type, b, c] = value;
+        let pos: number;
         switch (type) {
           case TYPE_DATE:
             set((hydrated[index] = new Date(b)));
@@ -117,18 +118,21 @@ function hydrate(this: ThisDecode, index: number): any {
           case TYPE_SET:
             const newSet = new Set();
             hydrated[index] = newSet;
-            for (let i = 1; i < value.length; i++)
-              stack.push([
+            pos = stack.length;
+            for (let i = 1; i < value.length; i++) {
+              stack.splice(pos, 0, [
                 value[i],
                 (v) => {
                   newSet.add(v);
                 },
               ]);
+            }
             set(newSet);
             continue;
           case TYPE_MAP:
             const map = new Map();
             hydrated[index] = map;
+            pos = postRun.length;
             for (let i = 1; i < value.length; i += 2) {
               const r: any[] = [];
               stack.push([
@@ -143,7 +147,7 @@ function hydrate(this: ThisDecode, index: number): any {
                   r[0] = k;
                 },
               ]);
-              postRun.push(() => {
+              postRun.splice(pos, 0, () => {
                 map.set(r[0], r[1]);
               });
             }
